@@ -1,0 +1,8 @@
+# 仓库内统一存 LF，工作区按平台原生换行检出。
+# 显式声明是为了防止 autocrlf=false 的机器把 CRLF 提交进来 —— 部署平台是 Linux，
+# 混入 CRLF 会让 shell 脚本（如 public/_redirects 之类的文本配置）出问题。
+* text=auto
+
+*.png binary
+*.jpg binary
+*.svg text

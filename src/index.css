@@ -1,0 +1,190 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* ──────────────────────────────────────────────────────────────
+   设计令牌（Tailwind v4 `@theme`）
+   定义在这里的变量会自动生成对应工具类，例如 --color-tide-400
+   会生成 bg-tide-400 / text-tide-400 / border-tide-400。
+   ────────────────────────────────────────────────────────────── */
+@theme {
+  /* 深水背景层次：越浅表示层级越高 */
+  --color-abyss-950: #05080f;
+  --color-abyss-900: #080d18;
+  --color-abyss-850: #0b1220;
+  --color-abyss-800: #101a2e;
+  --color-abyss-700: #17233c;
+  --color-abyss-600: #1f2f4f;
+
+  /* 主色：潮汐蓝 */
+  --color-tide-300: #a3b8ff;
+  --color-tide-400: #7f9cff;
+  --color-tide-500: #5b7cfa;
+  --color-tide-600: #4462e0;
+  --color-tide-700: #3550b8;
+
+  /* 副色：淡紫 */
+  --color-lilac-300: #cbb8ff;
+  --color-lilac-400: #b39dff;
+  --color-lilac-500: #9b7dff;
+
+  /* 点缀：浅青 */
+  --color-mist-300: #8ee6f5;
+  --color-mist-400: #5fd8ee;
+
+  /* 文本 */
+  --color-foam-100: #eef2ff;
+  --color-foam-200: #dbe3f8;
+  --color-foam-300: #c3cde8;
+  --color-foam-400: #93a1c4;
+  /* 最弱一级的文字色。取值受对比度约束：卡片表面 (#090f1b) 上必须 ≥ 4.5:1
+     （WCAG AA 小字号）。原来的 #6b7899 在纯底色上刚好 4.55:1，但一放到
+     surface / 下拉面板 / abyss-800 上就掉到 3.95–4.41:1，全部不合格。
+     #7d8aab 在同样这些背景上是 5.0–5.6:1。 */
+  --color-foam-500: #7d8aab;
+
+  /* 中英文混排字体栈：优先系统中文黑体，避免宋体回退 */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
+    "Noto Sans CJK SC", sans-serif;
+
+  --radius-card: 1rem;
+
+  --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   基础样式
+   ────────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* 底色放在 html 上：body::before 是 z-index:-1 的定位元素，
+     按 CSS 绘制顺序它会画在**父元素背景之上、body 背景之下**。
+     如果底色留在 body 上，光晕会被 body 自己的不透明背景盖掉。 */
+  html {
+    background-color: var(--color-abyss-950);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: transparent;
+    color: var(--color-foam-300);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* 水感背景：几团径向光晕，固定不随滚动 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60rem 40rem at 12% -8%, rgb(91 124 250 / 0.16), transparent 60%),
+      radial-gradient(50rem 36rem at 88% 4%, rgb(155 125 255 / 0.13), transparent 62%),
+      radial-gradient(46rem 34rem at 50% 108%, rgb(95 216 238 / 0.08), transparent 60%);
+  }
+
+  /* 锚点跳转时为吸顶导航留出空间 */
+  [id] {
+    scroll-margin-top: 6rem;
+  }
+
+  ::selection {
+    background-color: rgb(91 124 250 / 0.35);
+    color: var(--color-foam-100);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-tide-400);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  /* 细滚动条，避免在深色底上过于突兀 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-abyss-600) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-abyss-600);
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-abyss-700);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   prose 主题：把 typography 插件的变量接到本站配色上
+   ────────────────────────────────────────────────────────────── */
+.prose {
+  --tw-prose-body: var(--color-foam-300);
+  --tw-prose-headings: var(--color-foam-100);
+  --tw-prose-lead: var(--color-foam-400);
+  --tw-prose-links: var(--color-tide-300);
+  --tw-prose-bold: var(--color-foam-100);
+  --tw-prose-counters: var(--color-tide-400);
+  --tw-prose-bullets: var(--color-tide-500);
+  --tw-prose-hr: var(--color-abyss-700);
+  --tw-prose-quotes: var(--color-foam-200);
+  --tw-prose-quote-borders: var(--color-tide-500);
+  --tw-prose-captions: var(--color-foam-500);
+  --tw-prose-code: var(--color-mist-300);
+  --tw-prose-pre-code: var(--color-foam-200);
+  --tw-prose-pre-bg: var(--color-abyss-900);
+  --tw-prose-th-borders: var(--color-abyss-600);
+  --tw-prose-td-borders: var(--color-abyss-700);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   组件类
+   ────────────────────────────────────────────────────────────── */
+
+/* 卡片表面：深色玻璃质感。
+   刻意放在 components 层而不是 `@utility`：utilities 层永远排在 components
+   层之后，所以调用方的 `border-dashed`、`hover:border-tide-500/50` 一定能覆盖
+   这里的边框。写成 `@utility` 的话两者同层，谁赢取决于压缩后产物里的先后顺序
+   （压缩器还会把 border 长写合并成简写，连 border-style 一起重置），太脆。 */
+@layer components {
+  .surface {
+    background-color: rgb(11 18 32 / 0.72);
+    border: 1px solid rgb(31 47 79 / 0.9);
+    backdrop-filter: blur(12px);
+  }
+}
