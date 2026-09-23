@@ -79,6 +79,11 @@ export interface Module {
   symbol: string
   /** 卡片与页头用的 Tailwind 渐变类。 */
   accent: string
+  /**
+   * 标记为「星座专属模块」。省略表示这是三座通用的心法模块。
+   * 首页据此把模块分成「通用心法」和「按星座深入」两组。
+   */
+  sign?: Zodiac
   sections: Section[]
 }
 

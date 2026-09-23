@@ -11,6 +11,10 @@ const SIGNS: Zodiac[] = ['cancer', 'scorpio', 'pisces']
 export function Home() {
   const sectionCount = modulesByOrder.reduce((sum, m) => sum + m.sections.length, 0)
 
+  // 通用心法（模块 1-5）与星座专属（模块 6+）分组展示
+  const generalModules = modulesByOrder.filter((m) => !m.sign)
+  const signModules = modulesByOrder.filter((m) => m.sign)
+
   return (
     <div className="flex flex-col gap-12">
       <section className="animate-rise flex flex-col items-center gap-6 py-6 text-center sm:py-10">
@@ -52,12 +56,12 @@ export function Home() {
 
       <section className="flex flex-col gap-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold tracking-tight text-foam-100">五个模块</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foam-100">通用心法</h2>
           <span className="text-xs text-foam-500">建议按顺序阅读</span>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {modulesByOrder.map((module) => (
+          {generalModules.map((module) => (
             <ContentCard key={module.id} module={module} />
           ))}
 
@@ -77,6 +81,21 @@ export function Home() {
           </Link>
         </div>
       </section>
+
+      {signModules.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold tracking-tight text-foam-100">按星座深入</h2>
+            <span className="text-xs text-foam-500">挑你自己的星座看</span>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {signModules.map((module) => (
+              <ContentCard key={module.id} module={module} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

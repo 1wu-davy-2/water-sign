@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { ZODIAC_META } from '../data/types'
 import type { Module } from '../data/types'
 
 /** 首页的模块入口卡片。 */
@@ -23,8 +24,9 @@ export function ContentCard({ module }: { module: Module }) {
         >
           {module.symbol}
         </span>
+        {/* 星座专属模块显示该座的核心驱动，比「模块 6」更有信息量 */}
         <span className="text-[0.7rem] font-medium tracking-widest text-foam-500 uppercase">
-          模块 {module.order}
+          {module.sign ? ZODIAC_META[module.sign].trait : `模块 ${module.order}`}
         </span>
       </div>
 

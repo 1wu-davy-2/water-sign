@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 import { SCENE_META, ZODIAC_META } from '../data/types'
-import type { Scene, SpeechTemplate, ZodiacScope } from '../data/types'
+import type { Scene, SpeechTemplate, Zodiac, ZodiacScope } from '../data/types'
 import { SCENE_ORDER, speechTemplates } from '../data/speech-templates'
 import { TemplateCard } from './TemplateCard'
 
@@ -16,6 +17,19 @@ interface TemplateBrowserProps {
   groupByScene?: boolean
   /** 无结果时的提示文案。 */
   emptyHint?: string
+  /**
+   * 锁定星座筛选。模块页内联展示时传当前模块的星座，
+   * 否则「巨蟹座专属」模块里会混进天蝎和双鱼专属的话术。
+   * 锁定后星座筛选行会隐藏（改由模块本身决定）。
+   */
+  lockZodiac?: Zodiac
+  /** 初始星座筛选（可被用户改），用于从 URL 的 ?sign= 进入话术库时预选。 */
+  initialZodiac?: ZodiacFilter
+  /**
+   * 每个场景最多内联展示几条，超出部分给一个跳转到话术库的入口。
+   * 模块页是阅读场景，内联几十张卡片会把正文冲散。
+   */
+  limit?: number
 }
 
 /**
@@ -23,7 +37,12 @@ interface TemplateBrowserProps {
  * 若把默认值直接设成 `'all'`（= 通用），所有带具体星座标签的话术
  * 会在默认状态下被静默隐藏，用户根本不知道有内容没显示出来。
  */
-type ZodiacFilter = 'any' | ZodiacScope
+export type ZodiacFilter = 'any' | ZodiacScope
+
+/** 判断任意字符串是否是合法的星座筛选值（用于校验 URL 参数）。 */
+export function isZodiacFilter(value: string | null): value is ZodiacFilter {
+  return value === 'any' || value === 'all' || value === 'cancer' || value === 'scorpio' || value === 'pisces'
+}
 
 const ZODIAC_FILTERS: ZodiacFilter[] = ['any', 'all', 'cancer', 'scorpio', 'pisces']
 
@@ -48,9 +67,12 @@ export function TemplateBrowser({
   showFilters = true,
   groupByScene = true,
   emptyHint = '没有匹配的话术，试试换个筛选条件。',
+  lockZodiac,
+  initialZodiac,
+  limit,
 }: TemplateBrowserProps) {
   const [scene, setScene] = useState<Scene | 'all'>('all')
-  const [zodiac, setZodiac] = useState<ZodiacFilter>('any')
+  const [zodiac, setZodiac] = useState<ZodiacFilter>(lockZodiac ?? initialZodiac ?? 'any')
 
   const availableScenes = useMemo(
     () => (scenes ? SCENE_ORDER.filter((s) => scenes.includes(s)) : SCENE_ORDER),
@@ -102,44 +124,63 @@ export function TemplateBrowser({
             ))}
           </FilterRow>
 
-          <FilterRow label="星座">
-            {ZODIAC_FILTERS.map((z) => (
-              <Chip
-                key={z}
-                active={zodiac === z}
-                onClick={() => setZodiac(z)}
-                title={z === 'any' ? '不做星座筛选' : ZODIAC_META[z].trait}
-              >
-                {z !== 'any' && <span aria-hidden="true">{ZODIAC_META[z].symbol}</span>}{' '}
-                {ZODIAC_FILTER_LABEL[z]}
-              </Chip>
-            ))}
-          </FilterRow>
+          {/* 锁定了星座就不再显示这一行：筛选结果由所属模块决定，
+              再给一组按不动的按钮只会让人困惑 */}
+          {!lockZodiac && (
+            <FilterRow label="星座">
+              {ZODIAC_FILTERS.map((z) => (
+                <Chip
+                  key={z}
+                  active={zodiac === z}
+                  onClick={() => setZodiac(z)}
+                  title={z === 'any' ? '不做星座筛选' : ZODIAC_META[z].trait}
+                >
+                  {z !== 'any' && <span aria-hidden="true">{ZODIAC_META[z].symbol}</span>}{' '}
+                  {ZODIAC_FILTER_LABEL[z]}
+                </Chip>
+              ))}
+            </FilterRow>
+          )}
         </div>
       )}
 
       {/* aria-live：筛选后条数变化需要被读屏播报，否则用户不知道结果变了 */}
       <p aria-live="polite" className="text-xs text-foam-500">
         共 {visible.length} 条
-        {zodiac !== 'any' && zodiac !== 'all' && ' · 专属话术优先，通用话术随后'}
+        {lockZodiac && ` · 已按${ZODIAC_META[lockZodiac].label}筛选，含通用话术`}
+        {!lockZodiac && zodiac !== 'any' && zodiac !== 'all' && ' · 专属话术优先，通用话术随后'}
       </p>
 
       {visible.length === 0 && <p className="py-8 text-center text-sm text-foam-500">{emptyHint}</p>}
 
       {groupByScene
-        ? grouped.map(({ scene: s, items }) => (
-            <section key={s} className="flex flex-col gap-3">
-              <h3 className="flex items-baseline gap-2 text-sm font-semibold text-foam-100">
-                {SCENE_META[s].label}
-                <span className="text-xs font-normal text-foam-500">{SCENE_META[s].hint}</span>
-              </h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {items.map((tpl) => (
-                  <TemplateCard key={tpl.id} template={tpl} query={query} />
-                ))}
-              </div>
-            </section>
-          ))
+        ? grouped.map(({ scene: s, items }) => {
+            const shown = limit ? items.slice(0, limit) : items
+            const hidden = items.length - shown.length
+            return (
+              <section key={s} className="flex flex-col gap-3">
+                <h3 className="flex items-baseline gap-2 text-sm font-semibold text-foam-100">
+                  {SCENE_META[s].label}
+                  <span className="text-xs font-normal text-foam-500">{SCENE_META[s].hint}</span>
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {shown.map((tpl) => (
+                    <TemplateCard key={tpl.id} template={tpl} query={query} />
+                  ))}
+                </div>
+                {hidden > 0 && (
+                  <Link
+                    // 从星座模块进来时带上 sign，落地页直接就是该星座的筛选结果，
+                    // 而不是把用户丢回一个未筛选的 63 条大列表
+                    to={lockZodiac ? `/templates?sign=${lockZodiac}` : '/templates'}
+                    className="self-start text-xs text-tide-300 transition hover:underline"
+                  >
+                    还有 {hidden} 条「{SCENE_META[s].label}」话术 →
+                  </Link>
+                )}
+              </section>
+            )
+          })
         : (
           <div className="grid gap-3 sm:grid-cols-2">
             {visible.map((tpl) => (

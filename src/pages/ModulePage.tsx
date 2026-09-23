@@ -93,6 +93,10 @@ export function ModulePage() {
                   <TemplateBrowser
                     scenes={section.relatedTemplates}
                     showFilters={section.relatedTemplates.length > 3}
+                    // 星座专属模块只内联该星座适用的话术，
+                    // 否则「巨蟹座专属」页里会混进天蝎和双鱼专属的卡片
+                    lockZodiac={module.sign}
+                    limit={4}
                   />
                 </div>
               )}
